@@ -23,7 +23,7 @@ tend = 5.
 maxiter = int(tend/dt)
 
 plant_unc.u = 0.
-x = np.array([[0.], [0.], [np.deg2rad(0.01)], [0.], [0.], [0.]])  # initial state
+x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
 plant_unc.get_state(x)
 plant_unc.save_state(x)
 
@@ -39,7 +39,7 @@ plant_unc.plot_results(dt = dt, tend = tend, title = "Uncontrolled")
 
 plant_lqr = util.DoublePendulum()
 
-x = np.array([[0.], [0.], [np.deg2rad(0.01)], [0.], [0.], [0.]])  # initial state
+x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
 plant_lqr.get_state(x)
 plant_lqr.save_state(x)
 plant_lqr.get_linear_model()
@@ -57,27 +57,18 @@ for i in range(0, 100):
     plant_lqr.get_mats()
     plant_lqr.u = (-control.K @ x).item()
 
-plant_lqr.plot_results(dt = dt, tend = 1, title = "LQR Control")
+plant_lqr.plot_results(dt = dt, tend = 1., title = "LQR Control")
 
 #%% Deep Reinforcement Learning Control
 
 env = util.DoubPendEnv()
 env.dt = dt
 env.tend = tend
-done = False
-score = 0
-
-while not done:
-    action = env.action_space.sample()
-    n_state, reward, done, info = env.step(action)
-    score += reward
-
-print(f"Score with Random Input: {score}")
 
 state_shape = env.observation_space.shape
 action_shape = env.action_space.n
 
-model = util.build_model(state_shape, action_shape)
+model = util.build_dense_model(state_shape, action_shape)
 model.summary()
 
 agent = util.build_agent(model, action_shape)

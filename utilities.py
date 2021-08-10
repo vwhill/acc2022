@@ -26,7 +26,7 @@ rng = np.random.default_rng(69)  # seeded sim
 
 class DoublePendulum():
     def __init__(self):
-        self.m0 = 3.0   # mass of cart
+        self.m0 = 1.5   # mass of cart
         self.m1 = 0.5   # mass of pendulum 1
         self.m2 = 0.75  # mass of pendulum 2
         self.L1 = 0.5   # length of pendulum 1
@@ -62,7 +62,6 @@ class DoublePendulum():
         self.control_history = []
         
         self.get_mats()
-    
     
     def get_state(self, xin):
         self.statevec = xin.copy()
@@ -186,24 +185,38 @@ class DoubPendEnv(DoublePendulum, Env):
         self.tend = 5.
         self.time = 0.
         self.dp = DoublePendulum()
-        x = np.array([[0.], [0.], [np.deg2rad(0.01)], [0.], [0.], [0.]])  # initial state
+        x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
         self.dp.get_state(x)
         self.dp.save_state(x)
-        self.state = np.array([self.dp.position[1].item(), self.dp.position[3].item()])
-        self.action_space = Discrete(21)
-        self.observation_space = Box(low = -5 * np.ones(2),
-                                     high = 5 * np.ones(2))
+        self.state = np.array([self.dp.position[1].item(),
+                               self.dp.position[3].item(),
+                               self.dp.statevec[1].item(), 
+                               self.dp.statevec[2].item()])
+        self.actsize = 21
+        self.actmag = [-2, 2]
+        self.action_space = Discrete(self.actsize)
+        self.observation_space = Box(low = -5 * np.ones(4),
+                                     high = 5 * np.ones(4))
         
-        self.desired_state = [np.array([self.dp.y1init - 0.01, self.dp.y2init - 0.01]),
-                              np.array([self.dp.y1init + 0.01, self.dp.y2init + 0.01])]
+        self.desired_state = [np.array([self.dp.y1init - 0.05,
+                                        self.dp.y2init - 0.05,
+                                        -np.deg2rad(1.), 
+                                        -np.deg2rad(0.1)]),
+                              np.array([self.dp.y1init + 0.05,
+                                        self.dp.y2init + 0.05,
+                                        np.deg2rad(0.5), 
+                                        np.deg2rad(0.1)])]
         
     def step(self, action):
-        self.get_action(action)
+        self.get_action(self.actmag, action)
         x = rk4(doubpend, self.dp.statevec, self.dt, dp = self.dp)
         self.dp.get_state(x)
         self.dp.save_state(x)
         self.dp.get_mats()
-        self.state = np.array([self.dp.position[1].item(), self.dp.position[3].item()])
+        self.state = np.array([self.dp.position[1].item(),
+                               self.dp.position[3].item(),
+                               self.dp.statevec[1].item(), 
+                               self.dp.statevec[2].item()])
         
         if (self.state >= self.desired_state[0]).all() and (self.state <= self.desired_state[1]).all():
             reward = 1
@@ -213,7 +226,7 @@ class DoubPendEnv(DoublePendulum, Env):
         
         self.time += self.dt
         
-        if self.time == self.tend:
+        if self.time >= self.tend - self.dt:
             done = True
         else:
             done = False
@@ -222,56 +235,19 @@ class DoubPendEnv(DoublePendulum, Env):
     
     def reset(self):
         self.dp = DoublePendulum()
-        x = np.array([[0.], [0.], [np.deg2rad(0.01)], [0.], [0.], [0.]])  # initial state
+        x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
         self.dp.get_state(x)
         self.dp.save_state(x)
-        self.state = np.array([self.dp.position[1].item(), self.dp.position[3].item()])
+        self.state = np.array([self.dp.position[1].item(),
+                               self.dp.position[3].item(),
+                               self.dp.statevec[1].item(), 
+                               self.dp.statevec[2].item()])
         self.time = 0.
         return self.state
-
-    def get_action(self, action):
-        if action == 0:
-            self.dp.u = -1.0
-        if action == 1:
-            self.dp.u = -0.9
-        if action == 2:
-            self.dp.u = -0.8
-        if action == 3:
-            self.dp.u = -0.7
-        if action == 4:
-            self.dp.u = -0.6
-        if action == 5:
-            self.dp.u = -0.5
-        if action == 6:
-            self.dp.u = -0.4
-        if action == 7:
-            self.dp.u = -0.3
-        if action == 8:
-            self.dp.u = -0.2
-        if action == 9:
-            self.dp.u = -0.1
-        if action == 10:
-            self.dp.u = 0.0
-        if action == 11:
-            self.dp.u = 0.1
-        if action == 12:
-            self.dp.u = 0.2
-        if action == 13:
-            self.dp.u = 0.3
-        if action == 14:
-            self.dp.u = 0.4
-        if action == 15:
-            self.dp.u = 0.5
-        if action == 16:
-            self.dp.u = 0.6
-        if action == 17:
-            self.dp.u = 0.7
-        if action == 18:
-            self.dp.u = 0.8
-        if action == 19:
-            self.dp.u = 0.9
-        if action == 20:
-            self.dp.u = 1.0
+    
+    def get_action(self, mag, action):
+        actspace = np.linspace(mag[0], mag[1], self.actsize)
+        self.dp.u =  actspace[action].item()
 
 class LQR:
     def __init__(self, F, G, statedim, indim):
@@ -329,14 +305,23 @@ def discretize(dt, A, B, C, D):
     G = sysd.B
     return F, G
 
-def build_model(state_shape, action_shape):
+def build_dense_model(state_shape, action_shape):
     model = Sequential()
-    density = 500
-    numlayer = 5
+    density = 100
+    numlayer = 10
     model.add(layers.Dense(density, activation='relu', input_shape=state_shape))
     for i in range(0, numlayer):
         model.add(layers.Dense(density, activation='relu'))
     
+    model.add(layers.Dense(action_shape, activation='linear'))
+    return model
+
+def build_lstm_model(state_shape, action_shape):
+    model = Sequential()
+    epochs = 128
+    model.add(layers.Reshape((state_shape[1], state_shape[2]), input_shape=state_shape))
+    model.add(layers.LSTM(epochs, activation='tanh', recurrent_activation='hard_sigmoid', 
+                          return_sequences=True))
     model.add(layers.Dense(action_shape, activation='linear'))
     return model
 
@@ -350,6 +335,6 @@ def build_agent(model, actions):
     return dqn
 
 def train_agent(agent, env):
-    agent.fit(env, nb_steps=20000, visualize=False, verbose=1) # edit made to L56 of dqn.py!!!!!
+    agent.fit(env, nb_steps=100000, visualize=False, verbose=1) # edit made to L56 of dqn.py!!!!!
     agent.save_weights('dqn_weights.h5f', overwrite=True)
     # agent.test(env, nb_episodes = 5, visualize=False)
