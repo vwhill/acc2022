@@ -9,7 +9,7 @@ Main script for "Deep Reinforcement Learning Control for a Chaotic Dynamical Sys
 
 import numpy as np
 import utilities as util
-from tensorflow.keras.optimizers import Adam
+import tensorflow.keras.optimizers as optim
 
 rng = np.random.default_rng(69)  # seeded sim
 # rng = np.random.default_rng()  # unseeded sim
@@ -19,7 +19,7 @@ rng = np.random.default_rng(69)  # seeded sim
 plant_unc = util.DoublePendulum()
 
 dt = 0.01
-tend = 3.
+tend = 5.
 maxiter = int(tend/dt)
 
 plant_unc.u = 0.
@@ -71,9 +71,9 @@ action_shape = env.action_space.n
 model = util.build_dense_model(state_shape, action_shape)
 model.summary()
 
-agent = util.build_agent(model, action_shape)
+agent = util.build_dqn_agent(model, action_shape)
 
-agent.compile(Adam(lr=0.001), metrics=['mae'])
+agent.compile(optim.Adam(lr=0.001), metrics=['mae'])
 
 dotrain = 1
 
