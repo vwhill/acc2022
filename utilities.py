@@ -33,8 +33,8 @@ class DoublePendulum():
         self.L2 = 0.75  # length of pendulum 2
         self.g = 9.81   # gravitational constant
         
-        self.x0 = 0.     # initial value for x
-        self.xd0 = 0.    # initial value for x_dot
+        self.x0 = 0.    # initial value for x
+        self.xd0 = 0.   # initial value for x_dot
         self.t1 = 0.    # initial value for theta_1
         self.td1 = 0.   # initial value for theta_dot_1
         self.t2 = 0.    # initial value for theta_2
@@ -185,7 +185,7 @@ class DoubPendEnv(DoublePendulum, Env):
         self.tend = 5.
         self.time = 0.
         self.dp = DoublePendulum()
-        x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
+        x = np.array([[0.], [np.deg2rad(0.1)], [0.], [0.], [0.], [0.]])   # initial state
         self.dp.get_state(x)
         self.dp.save_state(x)
         self.state = np.array([self.dp.position[1].item(),
@@ -201,11 +201,11 @@ class DoubPendEnv(DoublePendulum, Env):
         self.desired_state = [np.array([self.dp.y1init - 0.05,
                                         self.dp.y2init - 0.05,
                                         -np.deg2rad(1.), 
-                                        -np.deg2rad(0.1)]),
+                                        -np.deg2rad(1.)]),
                               np.array([self.dp.y1init + 0.05,
                                         self.dp.y2init + 0.05,
-                                        np.deg2rad(0.5), 
-                                        np.deg2rad(0.1)])]
+                                        np.deg2rad(1.), 
+                                        np.deg2rad(1.)])]
         
     def step(self, action):
         self.get_action(self.actmag, action)
@@ -235,7 +235,7 @@ class DoubPendEnv(DoublePendulum, Env):
     
     def reset(self):
         self.dp = DoublePendulum()
-        x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
+        x = np.array([[0.], [np.deg2rad(0.1)], [0.], [0.], [0.], [0.]])   # initial state
         self.dp.get_state(x)
         self.dp.save_state(x)
         self.state = np.array([self.dp.position[1].item(),
@@ -308,7 +308,7 @@ def discretize(dt, A, B, C, D):
 def build_dense_model(state_shape, action_shape):
     model = Sequential()
     density = 100
-    numlayer = 10
+    numlayer = 5
     model.add(layers.Dense(density, activation='relu', input_shape=state_shape))
     for i in range(0, numlayer):
         model.add(layers.Dense(density, activation='relu'))
@@ -329,7 +329,7 @@ def build_agent(model, actions):
     policy = BoltzmannQPolicy()
     memory = SequentialMemory(limit=1000000, window_length=1)
     dqn = DQNAgent(model=model, memory=memory, policy=policy, 
-                  nb_actions=actions, nb_steps_warmup=500, 
+                  nb_actions=actions, nb_steps_warmup=1000, 
                   enable_double_dqn=False, enable_dueling_network=False, 
                   target_model_update=1e-2)
     return dqn

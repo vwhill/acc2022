@@ -19,11 +19,11 @@ rng = np.random.default_rng(69)  # seeded sim
 plant_unc = util.DoublePendulum()
 
 dt = 0.01
-tend = 5.
+tend = 3.
 maxiter = int(tend/dt)
 
 plant_unc.u = 0.
-x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
+x = np.array([[0.], [np.deg2rad(1.)], [np.deg2rad(1.)], [0.], [0.], [0.]])  # initial state
 plant_unc.get_state(x)
 plant_unc.save_state(x)
 
@@ -39,7 +39,7 @@ plant_unc.plot_results(dt = dt, tend = tend, title = "Uncontrolled")
 
 plant_lqr = util.DoublePendulum()
 
-x = np.array([[0.], [0.], [0.], [0.1], [np.deg2rad(1.)], [0.]])  # initial state
+x = np.array([[0.], [np.deg2rad(1.)], [np.deg2rad(1.)], [0.], [0.], [0.]])  # initial state
 plant_lqr.get_state(x)
 plant_lqr.save_state(x)
 plant_lqr.get_linear_model()
@@ -50,14 +50,14 @@ control = util.LQR(F_lqr, G_lqr, 6, 1)
 
 plant_lqr.u = -control.K @ x
 
-for i in range(0, 100):
+for i in range(0, 80):
     x = util.rk4(util.doubpend, x, dt, dp = plant_lqr)
     plant_lqr.get_state(x)
     plant_lqr.save_state(x)
     plant_lqr.get_mats()
     plant_lqr.u = (-control.K @ x).item()
 
-plant_lqr.plot_results(dt = dt, tend = 1., title = "LQR Control")
+plant_lqr.plot_results(dt = dt, tend = 0.8, title = "LQR Control")
 
 #%% Deep Reinforcement Learning Control
 
@@ -73,7 +73,7 @@ model.summary()
 
 agent = util.build_agent(model, action_shape)
 
-agent.compile(Adam(lr=0.0001), metrics=['mae'])
+agent.compile(Adam(lr=0.001), metrics=['mae'])
 
 dotrain = 1
 
